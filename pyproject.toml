@@ -1,0 +1,23 @@
+[project]
+name = "clickworthy"
+version = "0.1.0"
+description = "Statistical analysis of the Upworthy Research Archive"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas",
+    "duckdb",
+    "statsmodels",
+    "scipy",
+    "pymc",
+    "arviz",
+    "scikit-learn",
+    "matplotlib",
+    "jupyter",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,10 @@
+data/
+*.csv
+*.duckdb
+*.duckdb*
+.ipynb_checkpoints/
+.claude/settings.local.json
+__pycache__/
+*.egg-info/
+.env
+extra_docs/
