@@ -112,6 +112,35 @@ def filter_accounting(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     return out.reset_index()
 
 
+def test_level_impressions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """Per-test summary from the clean view: n_packages and median/mean
+    impressions per arm. One row per clickability_test_id."""
+    return con.execute(
+        f"""
+        SELECT
+            clickability_test_id,
+            COUNT(*) AS n_packages,
+            MEDIAN(impressions) AS median_impressions,
+            AVG(impressions) AS mean_impressions
+        FROM {CLEAN_VIEW}
+        GROUP BY clickability_test_id
+        """
+    ).df()
+
+
+def load_all_packages(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """All packages from the clean view, tidy frame with just the columns
+    Stage 1's archive-wide analyses need (test id, clicks, impressions,
+    created_at for ordering/splitting)."""
+    return con.execute(
+        f"""
+        SELECT clickability_test_id, created_at, headline, impressions, clicks
+        FROM {CLEAN_VIEW}
+        ORDER BY clickability_test_id, created_at
+        """
+    ).df()
+
+
 def load_test(
     con: duckdb.DuckDBPyConnection, test_id: str, clean: bool = True
 ) -> pd.DataFrame:

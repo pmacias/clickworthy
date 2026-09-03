@@ -136,6 +136,53 @@ Claude Code's bash subshells inherit the parent shell's environment, so activati
 
 **Do not run `conda create`, `conda install`, or any env-modifying command against this project inside a Claude Code session.** If a new dependency is needed, tell Phil so he can add it via `mamba install -n clickworthy -c conda-forge <package>` manually.
 
+## Pre-approved packages
+
+Install and pin without further checks:
+
+# Core / data
+numpy, pandas, scipy, duckdb, pyarrow, pyyaml
+
+# Classical stats / A/B testing
+statsmodels, scikit-learn, pingouin
+
+# Plotting
+matplotlib, seaborn, plotly
+
+# Bayesian / hierarchical
+pymc, arviz, pytensor, bambi
+
+# Causal inference
+dowhy, econml, causalml
+
+# Text mining (extension)
+nltk, spacy, gensim, sentence-transformers
+
+# Notebook / tooling
+jupyter, jupyterlab, ipywidgets, tqdm
+
+## Package installation policy
+
+For any package NOT on the pre-approved list above:
+1. State the exact name and version you intend to install.
+2. Look up the package's registry page (pypi.org) or search for it.
+   Report: approximate weekly/monthly downloads, and first-release date.
+3. Flag it explicitly if any of these are true:
+   - Fewer than ~50,000 weekly downloads
+   - Published or last updated in the last 30 days
+   - The name is a close lookalike of something on the approved list
+     (differs by one letter, hyphen, or plural)
+4. Always pin the exact version (`==x.y.z`), never a range, unless told
+   otherwise.
+5. If a package fails these checks, don't install it — report findings
+   and wait for a decision.
+
+This applies even mid-task: if a new package is needed while working,
+pause and run this check before installing.
+
+When a new package is approved, ask whether it should be added to the
+pre-approved list above for future sessions.
+
 ## Known pitfalls in this dataset (learned or anticipated — keep updated)
 
 - **Environment setup, not dataset-specific:** initial env creation via the machine's stock Anaconda (conda 4.11.0) hung indefinitely resolving the pymc/numba/llvmlite dependency graph — see Environment section above for the full story and the Miniforge/mamba fix. If a fresh machine ever needs this repo, use Miniforge/mamba from the start; don't attempt Anaconda's classic solver on this dependency stack.
