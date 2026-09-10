@@ -5,3 +5,4 @@
 
 SEED_WINNERS_CURSE = 20250301  # Stage 1 Task 4: split-half winner's-curse simulation
 SEED_PEEKING = 20250302  # Stage 1 Task 5: A/A peeking simulation
+SEED_BETA_BINOMIAL_PPC = 20250401  # Stage 2 Task 1: prior/posterior predictive draws
