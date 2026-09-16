@@ -192,5 +192,26 @@ pre-approved list above for future sessions.
 - **Impressions vary wildly across arms and tests.** Weight or model accordingly; never average CTRs across tests unweighted.
 - **Some tests changed mid-flight or have near-duplicate arms.** Treat suspicious tests (identical headlines, absurd CTRs) as data-quality candidates and log them in the ingestion notebook.
 - **Peeking/sequential stopping:** Upworthy's own stopping rules were informal. Test durations are not fixed-horizon; this matters for Stage 1 interpretation and is discussed explicitly in `02_classical_ab.ipynb`.
+- **"Unpooled" prior ≠ unregularized (Stage 2, Task 3):** `mu_test`'s prior
+  (`Normal(-4.6, 1.0)`) has no cross-test information sharing — its parameters are
+  fixed constants, not learned from other tests — but it is still a proper, non-flat
+  prior, and it still pulls `mu_test`'s posterior toward the archive baseline whenever a
+  specific test's own data disagrees with it. This bit Stage 2 Task 3's shrinkage plot:
+  a hand-derived "raw, no-pooling" comparison baseline was built assuming `mu_test` had
+  no regularization at all (an implicitly flat prior), while the model's actual
+  `delta_arm` posterior is measured relative to the real, regularized `mu_test`. The
+  mismatch produced sign-flipped and sometimes-growing "shrinkage" numbers that looked
+  like a modeling bug but were actually a comparison-definition bug. Fixed by
+  referencing both sides of any raw-vs-pooled comparison against the model's own fitted
+  value for the unpooled-but-regularized component, not a separately-derived proxy.
+  Lesson: "unpooled" in this project means *no cross-test sharing*, not *no
+  regularization* — any parameter with its own proper prior is still being pulled
+  somewhere, even in isolation, and a "raw" comparison that ignores this will be
+  silently wrong in exactly the cases (small tests, baselines far from the archive
+  average) that matter most for the comparison's whole point.
+  **Relevant to Stage 3 too:** any raw-vs-adjusted comparison built for the causal
+  estimator ladder should be checked against this same question — is a given model
+  component actually unregularized, or just uncorrelated across whatever grouping the
+  adjustment method assumes — before trusting a naive baseline for it.
 
 (Add new entries here as they are discovered — this section is the project's institutional memory.)
