@@ -78,6 +78,93 @@ def check_diagnostics(
     )
 
 
+def check_diagnostics_from_netcdf(
+    path: str, chunk_sizes: dict[str, int]
+) -> DiagnosticsReport:
+    """Chunked, disk-backed version of check_diagnostics for fits too large to hold fully
+    in memory alongside other objects (e.g. a full-exploratory-sample fit's ~7GB posterior
+    on a 16GB machine -- see CLAUDE.md's Bayesian conventions). Reads `path` (an
+    idata.to_netcdf() file) via xarray + h5netcdf, processing each named variable in
+    `chunk_sizes` (var_name -> chunk size along its `<var>_dim_0` dimension) in slices
+    rather than loading the whole array at once. A variable with no `_dim_0` dimension
+    (e.g. `sigma`, a scalar) is loaded whole regardless of chunk_sizes -- it's small at any
+    archive scale. `failing_params` is left empty (not worth the memory cost of building a
+    full per-parameter table this way); use `compare_params_from_netcdf` to inspect specific
+    parameters if failures need identifying."""
+    import gc
+
+    import xarray as xr
+
+    with xr.open_dataset(path, group="sample_stats", engine="h5netcdf") as ss:
+        n_divergences = int(ss["diverging"].values.sum())
+
+    max_r_hat = -np.inf
+    min_ess_bulk, min_ess_tail = np.inf, np.inf
+
+    with xr.open_dataset(path, group="posterior", engine="h5netcdf") as ds:
+        for var in ds.data_vars:
+            dim = f"{var}_dim_0"
+            if dim not in ds[var].dims:
+                sub = ds[var].load()
+                max_r_hat = max(max_r_hat, az.rhat(sub)[var].item())
+                continue
+            chunk_size = chunk_sizes.get(var, ds.sizes[dim])
+            for start in range(0, ds.sizes[dim], chunk_size):
+                idxs = list(range(start, min(start + chunk_size, ds.sizes[dim])))
+                sub = ds[var].isel({dim: idxs}).load()
+                max_r_hat = max(max_r_hat, az.rhat(sub)[var].values.max())
+                min_ess_bulk = min(min_ess_bulk, az.ess(sub, method="bulk")[var].values.min())
+                min_ess_tail = min(min_ess_tail, az.ess(sub, method="tail")[var].values.min())
+                del sub
+                gc.collect()
+
+    passed = (
+        n_divergences == 0
+        and max_r_hat < R_HAT_THRESHOLD
+        and min_ess_bulk > ESS_THRESHOLD
+        and min_ess_tail > ESS_THRESHOLD
+    )
+    return DiagnosticsReport(
+        n_divergences=n_divergences,
+        max_r_hat=max_r_hat,
+        min_ess_bulk=min_ess_bulk,
+        min_ess_tail=min_ess_tail,
+        failing_params=pd.DataFrame(),
+        passed=passed,
+    )
+
+
+def compare_params_from_netcdf(
+    paths_labels: list[tuple[str, str]], var_idx_map: dict[str, list[int]]
+) -> pd.DataFrame:
+    """Lazy, disk-backed r_hat/ESS comparison of specific named parameters across multiple
+    saved fits (idata.to_netcdf() files) -- e.g. "does this parameter's diagnostic improve
+    across configurations", without ever loading either fit's full posterior into memory
+    (CLAUDE.md's Bayesian conventions: comparisons across saved fits use chunked/lazy reads,
+    not multiple full InferenceData objects held at once). `var_idx_map` maps variable name
+    -> list of indices along its `<var>_dim_0` dimension. `paths_labels` is a list of
+    (path, label) pairs, one row-group per fit."""
+    import xarray as xr
+
+    rows = []
+    for path, label in paths_labels:
+        with xr.open_dataset(path, group="posterior", engine="h5netcdf") as ds:
+            for var, idxs in var_idx_map.items():
+                sub = ds[var].isel({f"{var}_dim_0": idxs}).load()
+                for i, idx in enumerate(idxs):
+                    one = sub.isel({f"{var}_dim_0": i})
+                    rows.append(
+                        {
+                            "attempt": label,
+                            "param": f"{var}[{idx}]",
+                            "r_hat": az.rhat(one)[var].item(),
+                            "ess_bulk": az.ess(one, method="bulk")[var].item(),
+                            "ess_tail": az.ess(one, method="tail")[var].item(),
+                        }
+                    )
+    return pd.DataFrame(rows).set_index("param")
+
+
 def divergence_funnel_check(
     idata: az.InferenceData, scale_var: str = "sigma"
 ) -> pd.DataFrame:
