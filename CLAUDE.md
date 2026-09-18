@@ -100,6 +100,7 @@ These are fixed so results are consistent across notebooks. Deviations require a
 **Everywhere**
 - Fixed seeds for anything stochastic; seeds live in one constants module, not scattered literals.
 - Plots are produced by Phil's own runs; generate plotting code, don't describe imagined figures. Label axes with units. No default matplotlib titles like "Figure 1".
+- PyMC `sample()` calls (and other PyMC sampling calls with a `progressbar` option, e.g. `sample_posterior_predictive`) always pass `progressbar=False`; more generally, avoid widget-based output (tqdm's default notebook widget, ipywidgets, etc.) in any notebook cell whose output is meant to be viewed outside a live Jupyter session. Reason: this is a portfolio project — notebooks are viewed via GitHub or a static renderer — and a saved `application/vnd.jupyter.widget-view+json` output renders as raw JSON/text there instead of a progress bar, since it depends on a live widget frontend that isn't present.
 
 ## Environment
 
