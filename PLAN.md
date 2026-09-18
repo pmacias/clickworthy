@@ -1,6 +1,6 @@
 # PLAN.md — clickworthy roadmap
 
-Staged in priority order. Each stage is independently shippable. **Do not begin a stage until the previous stage's acceptance criteria are met and Phil has signed off.** Within a stage, work through tasks in order unless Phil says otherwise.
+Staged in priority order. Each stage is independently shippable. (Current stage status is tracked in `README.md`; "CC" below means Claude Code, the AI coding assistant used on this project.) **Do not begin a stage until the previous stage's acceptance criteria are met and Phil has signed off.** Within a stage, work through tasks in order unless Phil says otherwise.
 
 Skill targets this project exists to demonstrate, mapped to stages:
 
@@ -70,8 +70,8 @@ Tasks:
 Tasks:
 1. Warm-up (pedagogical, small): Beta-Binomial model of a single test's arms. Prior predictive check, fit, posterior predictive check, full diagnostics. This establishes the workflow pattern every later model follows.
 2. Hierarchical model on a ~500-test subsample: binomial likelihood on counts, logit link, test-level intercepts, arm effects partially pooled across tests, non-centered parameterization. Verify diagnostics per CLAUDE.md thresholds.
-3. Shrinkage analysis: plot raw (no-pooling, Stage 1) effect estimates vs partially-pooled posteriors, ordered by arm sample size. Small noisy tests should shrink hard toward the population; large tests barely move. This plot is the headline figure of the stage — the direct visual of why hierarchical modeling exists.
-4. Scale to full exploratory sample. If NUTS runtime is prohibitive, surface options to Phil (nutpie backend, ADVI cross-check) with tradeoffs; decide together.
+3. Shrinkage analysis: plot raw (no-pooling, Stage 1) effect estimates vs partially-pooled posteriors, ordered by arm sample size. (As built, the "raw" side is defined relative to the model's own fitted `mu_test`, not a separately-derived Stage 1 quantity -- see the "unpooled ≠ unregularized" entry in CLAUDE.md's Known pitfalls for why.) Small noisy tests should shrink hard toward the population; large tests barely move. This plot is the headline figure of the stage — the direct visual of why hierarchical modeling exists.
+4. Scale to full exploratory sample. If NUTS runtime is prohibitive, surface options to Phil (nutpie backend, ADVI cross-check) with tradeoffs; decide together. (nutpie later turned out to be incompatible with this env's Python 3.11 -- see CLAUDE.md's Known pitfalls.)
 5. Mixture model (`04_mixture_effects.ipynb`): model the population of arm effects as a two-component mixture (near-null spike + wider slab of real effects). Report the posterior fraction of tests with practically meaningful effects, with a stated practical-significance threshold. Compare against the naive "% significant" from Stage 1.
 6. Population conclusions: posterior for the effect-size distribution — what does a *typical* headline change actually do to CTR?
 

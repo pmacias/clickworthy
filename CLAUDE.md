@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file guides AI coding assistants working in this repo; the architecture and statistical-convention notes below are equally useful background for any human contributor.
+This file guides AI coding assistants ("CC", for Claude Code, in the notes below) working in this repo; the architecture and statistical-convention notes below are equally useful background for any human contributor.
 
 ## Project: clickworthy
 
@@ -31,7 +31,8 @@ clickworthy/
 │   ├── classical.py        # Stage 1: tests, CIs, power (thin wrappers + conventions)
 │   ├── models.py           # Stage 2: PyMC model builders
 │   ├── causal.py           # Stage 3: confounding construction + estimators
-│   └── evaluation.py       # shared metrics, diagnostics checks
+│   ├── evaluation.py       # shared metrics, diagnostics checks
+│   └── constants.py        # every fixed seed used in the project
 ├── notebooks/
 │   ├── 01_data_ingestion.ipynb
 │   ├── 02_classical_ab.ipynb
@@ -39,7 +40,10 @@ clickworthy/
 │   ├── 04_mixture_effects.ipynb
 │   ├── 05_causal_benchmark.ipynb
 │   └── 06_results_summary.ipynb
-└── data/ -> NOT in repo; see below
+├── clickworthy.duckdb      # built by notebook 01; gitignored
+└── idata/                  # saved InferenceData from every MCMC fit; gitignored
+
+(raw CSVs live outside the repo entirely -- see Data below)
 ```
 
 Notebooks are numbered in dependency order. Shared logic lives in `src/clickworthy/`; notebooks import from the package rather than duplicating functions. Each notebook should run top-to-bottom cleanly from a fresh kernel.
@@ -60,7 +64,7 @@ Actual columns in the file in hand: `created_at`, `updated_at`, `clickability_te
 - Each row = one **package** (an arm: a headline/image bundle) of one **test**. Packages in the same test share `clickability_test_id`; viewers were randomly assigned to packages within a test.
 - `impressions`: viewers assigned to that package. `clicks`: how many of those clicked. CTR = clicks / impressions. Baseline CTRs are low (order 1%), so treat proportions carefully — normal approximations can be poor for small arms.
 - `significance` and `first_place` are **not** statistical significance in our sense — per the archive maintainers, the exact method Upworthy used to generate `significance` was never recovered from former staff, and both columns were shown to editors only to guide which package to select as `winner`. **Do not use these as a proxy for statistical significance in Stage 1 — compute it ourselves from `impressions`/`clicks`.**
-- `winner`: whether editors selected this package for the live site after the test concluded. Note this introduces the same selection-effect logic as → winner's curse (below) if used carelessly as a "ground truth" for "did this package perform best."
+- `winner`: whether editors selected this package for the live site after the test concluded. Note this introduces the same selection-effect logic as the winner's curse (see Known pitfalls below) if used carelessly as a "ground truth" for "did this package perform best."
 - **No `problem`/randomization-flag column exists in this file version.** The current archive (per a June 2024 update, not reflected in our March 2020 snapshot) added a `problem` column, set to 1 for every package in a test where a randomization defect was found, concentrated entirely in tests run **June 25, 2013 – January 10, 2014**. Since we don't have that column, apply the equivalent **date-based exclusion** directly on `created_at` (see Standard filters below). This is a documented, deliberate substitution, not a guess — the docs state the column and the date range are defined identically for the affected tests.
 
 ### Standard filters (apply via the DuckDB views, not ad hoc per notebook)
@@ -68,7 +72,7 @@ Actual columns in the file in hand: `created_at`, `updated_at`, `clickability_te
 1. Drop packages/tests with `created_at` between 2013-06-25 and 2014-01-10, inclusive — stands in for the `problem` column absent from this file version (see schema note above).
 2. Drop degenerate tests: fewer than 2 packages, or any package with 0 impressions.
 
-Every notebook states which view it uses. Exploratory dips outside these filters are fine only in `02_early_exploration`-style contexts and must be labeled as such.
+Every notebook states which view it uses. Exploratory dips outside these filters (e.g. the schema-verification and filter-accounting sections of `01_data_ingestion.ipynb`, which deliberately look at the raw table) must be labeled as such.
 
 ## Statistical conventions (non-negotiable defaults)
 
@@ -105,7 +109,7 @@ These are fixed so results are consistent across notebooks. Deviations require a
 ## Environment
 
 - Single env named `clickworthy` (native arm64), created via **Homebrew's Miniforge/mamba**, not the machine's existing Anaconda install. Root prefix: `/opt/homebrew/Caskroom/miniforge/base`. Env lives at `/opt/homebrew/Caskroom/miniforge/base/envs/clickworthy`.
-- Core deps: python ≥3.11, pandas, duckdb, statsmodels, scipy, pymc, arviz, scikit-learn, matplotlib, jupyter. No GPU/MPS requirement — PyMC runs CPU here.
+- Core deps: python ≥3.11, pandas, duckdb, statsmodels, scipy, pymc, arviz, scikit-learn, matplotlib, jupyter. `xarray` and `h5netcdf` (used by `evaluation.py`'s disk-backed diagnostics) arrive as transitive dependencies of arviz and are not installed separately. No GPU/MPS requirement — PyMC runs CPU here.
 - macOS. No Rosetta env needed for this project (unlike flashpoint).
 
 ### Why Miniforge/mamba instead of the machine's existing Anaconda
@@ -144,6 +148,7 @@ Claude Code's bash subshells inherit the parent shell's environment, so activati
 
 Install and pin without further checks:
 
+```
 # Core / data
 numpy, pandas, scipy, duckdb, pyarrow, pyyaml
 
@@ -164,6 +169,7 @@ nltk, spacy, gensim, sentence-transformers
 
 # Notebook / tooling
 jupyter, jupyterlab, ipywidgets, tqdm
+```
 
 ## Package installation policy
 

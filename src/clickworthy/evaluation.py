@@ -88,9 +88,11 @@ def check_diagnostics_from_netcdf(
     `chunk_sizes` (var_name -> chunk size along its `<var>_dim_0` dimension) in slices
     rather than loading the whole array at once. A variable with no `_dim_0` dimension
     (e.g. `sigma`, a scalar) is loaded whole regardless of chunk_sizes -- it's small at any
-    archive scale. `failing_params` is left empty (not worth the memory cost of building a
-    full per-parameter table this way); use `compare_params_from_netcdf` to inspect specific
-    parameters if failures need identifying."""
+    archive scale -- and contributes its r_hat and bulk/tail ESS to the overall max/min
+    exactly like every chunked variable. `failing_params` is left empty (not worth the
+    memory cost of building a full per-parameter table this way); use
+    `compare_params_from_netcdf` to inspect specific parameters if failures need
+    identifying."""
     import gc
 
     import xarray as xr
@@ -107,6 +109,8 @@ def check_diagnostics_from_netcdf(
             if dim not in ds[var].dims:
                 sub = ds[var].load()
                 max_r_hat = max(max_r_hat, az.rhat(sub)[var].item())
+                min_ess_bulk = min(min_ess_bulk, az.ess(sub, method="bulk")[var].item())
+                min_ess_tail = min(min_ess_tail, az.ess(sub, method="tail")[var].item())
                 continue
             chunk_size = chunk_sizes.get(var, ds.sizes[dim])
             for start in range(0, ds.sizes[dim], chunk_size):

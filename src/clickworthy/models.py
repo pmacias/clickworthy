@@ -1,9 +1,12 @@
-# Stage 2: PyMC model builders (hierarchical models start in Task 2).
+# Stage 2: Bayesian model builders.
 #
-# Task 1 (pedagogical warm-up, this file's only content so far): a
-# per-arm Beta-Binomial model, fit analytically via conjugacy -- no
-# PyMC/MCMC needed here, since the point is to show the closed-form
-# case before Task 2 introduces sampling.
+# Two models live here:
+#   - Task 1 (pedagogical warm-up): a per-arm Beta-Binomial model, fit
+#     analytically via conjugacy -- no PyMC/MCMC needed, since the point is
+#     to show the closed-form case before Task 2 introduces sampling.
+#   - Tasks 2-4: the hierarchical binomial-logit model (prior predictive
+#     simulator + PyMC builder), used on the ~500-test subsample and then
+#     the full exploratory sample.
 #
 # Conventions (CLAUDE.md "Bayesian" section):
 #   - Likelihood is on raw counts: clicks ~ Binomial(impressions, p).
@@ -83,7 +86,10 @@ def sample_posterior_predictive(
     return rng.binomial(posterior.impressions, p_draws)
 
 
-# Task 2: hierarchical model, prior predictive only (build/fit comes later).
+# Task 2 onward: hierarchical model. A NumPy prior-predictive simulator first
+# (so the prior can be checked without building the PyMC graph), then the PyMC
+# model builder itself. Both share the structure below; the notebook supplies
+# the concrete prior constants (MU_MEAN, MU_SD, SIGMA_SCALE).
 #
 # Structure (CLAUDE.md "Bayesian" section):
 #   clicks_arm ~ Binomial(impressions_arm, p_arm)

@@ -8,8 +8,9 @@
 #   2. Drop degenerate tests: fewer than 2 packages, or any package with
 #      0 impressions.
 #
-# No confirmatory-sample view: the confirmatory dataset is access-gated,
-# not freely downloadable (see CLAUDE.md's Data section).
+# No confirmatory-sample view, deliberately: the confirmatory CSV is on disk but
+# is read exactly once, in Stage 4c, after claims have been preregistered -- see
+# CLAUDE.md's Data section for the access rule. Nothing in this module touches it.
 
 from pathlib import Path
 
@@ -34,6 +35,8 @@ def build_database(
     """Load the archive CSV into a fresh DuckDB file and create the
     standard filtered view. Returns an open connection to db_path."""
     con = duckdb.connect(str(db_path))
+    # column00 is the CSV's unnamed leading pandas index column (DuckDB
+    # auto-names it); it carries no information, so it is excluded below.
     con.execute(
         f"""
         CREATE OR REPLACE TABLE {RAW_TABLE} AS

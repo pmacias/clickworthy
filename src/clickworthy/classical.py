@@ -41,7 +41,9 @@ def arm_summary(test_df: pd.DataFrame, alpha: float = ALPHA) -> pd.DataFrame:
 def two_proportion_test(
     count1: int, nobs1: int, count2: int, nobs2: int
 ) -> tuple[float, float]:
-    """Score (Wald-type) two-proportion z-test. Returns (z_stat, p_value)."""
+    """Two-proportion z-test using the score statistic (statsmodels
+    method="score", i.e. the pooled-variance z-test, not the Wald form).
+    Returns (z_stat, p_value)."""
     stat, pval = test_proportions_2indep(
         count1, nobs1, count2, nobs2, method="score", compare="diff"
     )
@@ -216,6 +218,8 @@ def simulate_aa_peeking(
             peek_n += 1
             ca, cb = clicks_a[:n].sum(), clicks_b[:n].sum()
             if ca == 0 and cb == 0:
+                # No clicks in either arm yet: the pooled proportion is 0, the
+                # test statistic is undefined, and there is nothing to peek at.
                 continue
             _, p = two_proportion_test(ca, n, cb, n)
             if not peeking_reject and p < alpha:
