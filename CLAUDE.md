@@ -110,7 +110,7 @@ These are fixed so results are consistent across notebooks. Deviations require a
 
 - Single env named `clickworthy` (native arm64), created via **Homebrew's Miniforge/mamba**, not the machine's existing Anaconda install. Root prefix: `/opt/homebrew/Caskroom/miniforge/base`. Env lives at `/opt/homebrew/Caskroom/miniforge/base/envs/clickworthy`.
 - Core deps: python ≥3.11, pandas, duckdb, statsmodels, scipy, pymc, arviz, scikit-learn, matplotlib, jupyter. `xarray` and `h5netcdf` (used by `evaluation.py`'s disk-backed diagnostics) arrive as transitive dependencies of arviz and are not installed separately. No GPU/MPS requirement — PyMC runs CPU here.
-- macOS. No Rosetta env needed for this project (unlike flashpoint).
+- macOS, native arm64 throughout. No Rosetta layer needed for this project.
 
 ### Why Miniforge/mamba instead of the machine's existing Anaconda
 
